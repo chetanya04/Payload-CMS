@@ -27,28 +27,73 @@ interface PayloadFieldProps {
   [key: string]: any;
 }
 
+// Centralized styling and constants
+const styles = {
+  container: {
+    padding: "1rem",
+    background: "#fff",
+    border: "1px solid #ddd",
+    borderRadius: "6px",
+    marginTop: "1rem",
+  },
+  message: { padding: "1rem" },
+  header: {
+    marginTop: 0,
+    display: "flex",
+    alignItems: "center",
+    gap: "0.5rem",
+  },
+  badge: {
+    color: "#fff",
+    padding: "2px 8px",
+    borderRadius: "12px",
+    fontSize: "12px",
+    fontWeight: 600,
+    textTransform: "uppercase" as const,
+  },
+  buttonGroup: {
+    marginTop: "1rem",
+    display: "flex",
+    gap: "1rem",
+  },
+  button: {
+    padding: "8px 16px",
+    color: "#fff",
+    border: "none",
+    borderRadius: "4px",
+    cursor: "pointer",
+  },
+  logItem: {
+    padding: "0.5rem 0",
+    borderBottom: "1px solid #eee",
+    display: "flex",
+    justifyContent: "space-between",
+  },
+};
+
+const statusColors = {
+  approved: "#28a745",
+  completed: "#28a745",
+  rejected: "#dc3545",
+  pending: "#ffc107",
+  default: "#6c757d",
+};
+
 const WorkflowStatus: React.FC<PayloadFieldProps> = (props) => {
-  // ——————————————————————————— helpers & state
-  const docId =
-    props.data?.id ||
-    props.doc?.id ||
-    props.value?.id ||
+  // Get document ID from various possible sources
+  const docId = 
+    props.data?.id || 
+    props.doc?.id || 
+    props.value?.id || 
     (typeof window !== "undefined" && window.location.pathname.split("/").pop());
 
+  // State management
   const [workflow, setWorkflow] = useState<WorkflowInstance | null>(null);
   const [logs, setLogs] = useState<WorkflowLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // ——————————————————————————— fetch both workflow + logs
-  useEffect(() => {
-    if (docId) {
-      fetchData();
-    } else {
-      setLoading(false);
-    }
-  }, [docId]);
-
+  // Fetch workflow data
   const fetchData = async () => {
     try {
       setLoading(true);
@@ -59,21 +104,28 @@ const WorkflowStatus: React.FC<PayloadFieldProps> = (props) => {
         fetch(`/api/workflow-logs?where[documentId][equals]=${docId}&sort=-createdAt`),
       ]);
 
-      if (!wfRes.ok || !logRes.ok) throw new Error("Failed to fetch workflow data");
+      if (!wfRes.ok || !logRes.ok) throw new Error("Failed to fetch data");
 
-      const wfData = await wfRes.json();
-      const logData = await logRes.json();
-
+      const [wfData, logData] = await Promise.all([wfRes.json(), logRes.json()]);
       setWorkflow(wfData.docs?.[0] || null);
       setLogs(logData.docs || []);
     } catch (err) {
-      setError("Failed to load workflow.");
+      setError("Failed to load workflow");
     } finally {
       setLoading(false);
     }
   };
 
-  // ——————————————————————————— approve / reject
+  // Load data when component mounts or docId changes
+  useEffect(() => {
+    if (docId) {
+      fetchData();
+    } else {
+      setLoading(false);
+    }
+  }, [docId]);
+
+  // Handle approve/reject actions
   const handleAction = async (action: "approved" | "rejected", comment?: string) => {
     try {
       const response = await fetch("/api/workflow-logs", {
@@ -89,145 +141,109 @@ const WorkflowStatus: React.FC<PayloadFieldProps> = (props) => {
         }),
       });
 
-      if (!response.ok) throw new Error(`Failed to ${action} document`);
-
-      await fetchData(); // refresh workflow + logs
+      if (!response.ok) throw new Error(`Failed to ${action}`);
+      await fetchData(); // Refresh data
     } catch (err) {
-      console.error(`Failed to ${action}:`, err);
-      alert(`❌ Failed to ${action} the document.`);
+      alert(`Failed to ${action} document`);
     }
   };
 
   const handleApprove = () => handleAction("approved");
-
+  
   const handleReject = () => {
     const reason = window.prompt("Rejection reason:");
-    if (reason !== null) handleAction("rejected", reason || "Rejected");
-  };
-
-  // ——————————————————————————— UI helpers
-  const getStatusColor = (status: string) => {
-    switch (status?.toLowerCase()) {
-      case "approved":
-      case "completed":
-        return "#28a745";
-      case "rejected":
-        return "#dc3545";
-      case "pending":
-        return "#ffc107";
-      default:
-        return "#6c757d";
+    if (reason !== null) {
+      handleAction("rejected", reason || "Rejected");
     }
   };
 
-  // ——————————————————————————— render guards
-  if (!docId)
+  // Helper function for status colors
+  const getStatusColor = (status: string) => 
+    statusColors[status?.toLowerCase() as keyof typeof statusColors] || statusColors.default;
+
+  // Early returns for different states
+  if (!docId) {
     return (
-      <p style={{ padding: "1rem", background: "#f0f0f0" }}>
-        💾 Save the document to view workflow status.
+      <p style={{ ...styles.message, background: "#f0f0f0" }}>
+        💾 Save the document to view workflow status
       </p>
     );
+  }
 
-  if (loading) return <p style={{ padding: "1rem" }}>⏳ Loading workflow…</p>;
+  if (loading) {
+    return <p style={styles.message}>⏳ Loading workflow…</p>;
+  }
 
-  if (error)
+  if (error) {
     return (
-      <p style={{ padding: "1rem", color: "red" }}>
+      <p style={{ ...styles.message, color: "red" }}>
         ⚠️ {error}
       </p>
     );
+  }
 
-  if (!workflow)
+  if (!workflow) {
     return (
-      <p style={{ padding: "1rem", background: "#fafafa" }}>
-        📄 No workflow instance found for this document.
+      <p style={{ ...styles.message, background: "#fafafa" }}>
+        📄 No workflow found for this document
       </p>
     );
+  }
 
-  // ——————————————————————————— main render
+  // Main render
   return (
-    <div
-      style={{
-        padding: "1rem",
-        background: "#ffffff",
-        border: "1px solid #ddd",
-        borderRadius: "6px",
-        marginTop: "1rem",
-      }}
-    >
-      <h3 style={{ marginTop: 0, display: "flex", alignItems: "center", gap: "0.5rem" }}>
+    <div style={styles.container}>
+      {/* Header with status badge */}
+      <h3 style={styles.header}>
         📋 Workflow Status
         <span
           style={{
-            color: "#fff",
+            ...styles.badge,
             background: getStatusColor(workflow.status),
-            padding: "2px 8px",
-            borderRadius: "12px",
-            fontSize: "12px",
-            fontWeight: 600,
-            textTransform: "uppercase",
           }}
         >
           {workflow.status}
         </span>
       </h3>
 
+      {/* Current step info */}
       <p>
         <strong>Current Step:</strong> {workflow.currentStep}
       </p>
 
+      {/* Action buttons (only show when pending) */}
       {workflow.status === "pending" && (
-        <div style={{ marginTop: "1rem", display: "flex", gap: "1rem" }}>
+        <div style={styles.buttonGroup}>
           <button
             onClick={handleApprove}
-            style={{
-              padding: "8px 16px",
-              backgroundColor: "#28a745",
-              color: "#fff",
-              border: "none",
-              borderRadius: "4px",
-              cursor: "pointer",
-            }}
+            style={{ ...styles.button, backgroundColor: "#28a745" }}
           >
             ✅ Approve
           </button>
           <button
             onClick={handleReject}
-            style={{
-              padding: "8px 16px",
-              backgroundColor: "#dc3545",
-              color: "#fff",
-              border: "none",
-              borderRadius: "4px",
-              cursor: "pointer",
-            }}
+            style={{ ...styles.button, backgroundColor: "#dc3545" }}
           >
             ❌ Reject
           </button>
         </div>
       )}
 
-      {/* ——— Workflow History ——— */}
+      {/* Workflow history */}
       <h4 style={{ marginTop: "2rem" }}>📝 Workflow History</h4>
       {logs.length === 0 ? (
         <p style={{ fontStyle: "italic", color: "#666" }}>No history yet.</p>
       ) : (
         <ul style={{ listStyle: "none", paddingLeft: 0, margin: 0 }}>
           {logs.map((log) => (
-            <li
-              key={log.id}
-              style={{
-                padding: "0.5rem 0",
-                borderBottom: "1px solid #eee",
-                display: "flex",
-                justifyContent: "space-between",
-              }}
-            >
+            <li key={log.id} style={styles.logItem}>
               <span>
-                <strong style={{ textTransform: "capitalize" }}>{log.action}</strong>{" "}
-                {log.comment && `— ${log.comment}`}
+                <strong style={{ textTransform: "capitalize" }}>
+                  {log.action}
+                </strong>
+                {log.comment && ` — ${log.comment}`}
               </span>
-              <span style={{ fontSize: "12px", color: "#888888" }}>
+              <span style={{ fontSize: "12px", color: "#888" }}>
                 {new Date(log.createdAt).toLocaleString()}
               </span>
             </li>

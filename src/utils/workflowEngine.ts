@@ -2,7 +2,7 @@ export const evaluateConditions = (doc: any, conditions: string): boolean => {
     if (!conditions) return true;
 
     // Simple condition check (e.g., "amount > 10000")
-    if (conditions.includes('amount >')) {
+    if (conditions.includes(' amount ')) {
         const threshold = parseInt(conditions.split('>')[1].trim());
         return doc.amount > threshold;
     }
