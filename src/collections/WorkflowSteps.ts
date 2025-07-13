@@ -4,6 +4,11 @@ const WorkflowSteps: CollectionConfig = {
   slug: 'workflow-steps',
   fields: [
     {
+      name: 'workflowId',
+      type: 'text',
+      required: true,
+    },
+    {
       name: 'stepName',
       type: 'text',
       required: true,

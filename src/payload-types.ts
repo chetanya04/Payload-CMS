@@ -196,6 +196,7 @@ export interface Workflow {
  */
 export interface WorkflowStep {
   id: string;
+  workflowId: string;
   stepName: string;
   order: number;
   updatedAt: string;
@@ -374,6 +375,7 @@ export interface WorkflowsSelect<T extends boolean = true> {
  * via the `definition` "workflow-steps_select".
  */
 export interface WorkflowStepsSelect<T extends boolean = true> {
+  workflowId?: T;
   stepName?: T;
   order?: T;
   updatedAt?: T;
