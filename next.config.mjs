@@ -1,4 +1,4 @@
-import { withPayload } from '@payloadcms/next/withPayload'
+const { withPayload } = require('@payloadcms/next/withPayload')
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
@@ -16,16 +16,20 @@ const nextConfig = {
       '.mjs': ['.mts', '.mjs'],
     }
 
-    // Handle CSS files
-    if (!isServer) {
-      webpackConfig.resolve.fallback = {
-        ...webpackConfig.resolve.fallback,
-        fs: false,
-      }
+    // Handle CSS files specifically
+    webpackConfig.module.rules.push({
+      test: /\.css$/,
+      use: ['style-loader', 'css-loader'],
+    })
+
+    // Ignore CSS files in Node.js environment
+    if (isServer) {
+      webpackConfig.externals = webpackConfig.externals || []
+      webpackConfig.externals.push(/\.css$/)
     }
 
     return webpackConfig
   },
 }
 
-export default withPayload(nextConfig, { devBundleServerPackages: false })
+module.exports = withPayload(nextConfig, { devBundleServerPackages: false })
