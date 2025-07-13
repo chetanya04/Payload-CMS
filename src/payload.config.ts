@@ -17,16 +17,18 @@ import DocumentWorkflows from './collections/DocumentWorkflows'
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
 dotenv.config()
+
 export default buildConfig({
   admin: {
     user: Users.slug,
     importMap: {
       baseDir: path.resolve(dirname),
     },
+    bundler: 'webpack', // Explicitly set bundler
   },
   collections: [Users, Media, Blog, Workflows, WorkflowSteps, WorkflowLogs, DocumentWorkflows],
   editor: lexicalEditor(),
-  secret: '123456789',
+  secret: process.env.PAYLOAD_SECRET || '123456789', // Use env variable
   typescript: {
     outputFile: path.resolve(dirname, 'payload-types.ts'),
   },
@@ -36,6 +38,5 @@ export default buildConfig({
   sharp,
   plugins: [
     payloadCloudPlugin(),
-    // storage-adapter-placeholder
   ],
 })

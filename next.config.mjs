@@ -8,13 +8,18 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: false,
   },
-  // Your Next.js config here
   webpack: (webpackConfig) => {
     webpackConfig.resolve.extensionAlias = {
       '.cjs': ['.cts', '.cjs'],
       '.js': ['.ts', '.tsx', '.js', '.jsx'],
       '.mjs': ['.mts', '.mjs'],
     }
+
+    // Add CSS handling
+    webpackConfig.module.rules.push({
+      test: /\.css$/,
+      use: ['style-loader', 'css-loader'],
+    })
 
     return webpackConfig
   },
