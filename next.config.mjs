@@ -1,4 +1,4 @@
-const { withPayload } = require('@payloadcms/next/withPayload')
+import { withPayload } from '@payloadcms/next/withPayload'
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
@@ -32,4 +32,4 @@ const nextConfig = {
   },
 }
 
-module.exports = withPayload(nextConfig, { devBundleServerPackages: false })
+export default withPayload(nextConfig, { devBundleServerPackages: false })
