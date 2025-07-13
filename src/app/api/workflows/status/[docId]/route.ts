@@ -4,11 +4,11 @@ import configPromise from '@payload-config';
 
 export async function GET(
     request: NextRequest,
-    { params }: { params: { docId: string } }
+    { params }: { params: Promise<{ docId: string }> }
 ) {
     try {
         const payload = await getPayloadHMR({ config: configPromise });
-        const { docId } = params;
+        const { docId } = await params;
 
         if (!docId) {
             return NextResponse.json({ error: 'Document ID is required' }, { status: 400 });
